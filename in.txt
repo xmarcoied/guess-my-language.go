@@ -1,0 +1,2 @@
+var = "Marcoied"
+print(len(var))

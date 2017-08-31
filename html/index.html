@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>What's my language</title>
+	<style>
+		table, th, td {
+		    border: 1px solid black;
+		    border-collapse: collapse;
+		    margin: auto;
+		}
+		th, td ,h1 , h3{
+		    padding: 5px;
+		    text-align: center;    
+		}
+	</style>
+</head>
+<body>
+
+	<pre id="demo"></pre>
+
+        	<table style="width:50%">
+        		<tr>
+        			<td>
+        				<h1>Guess my language!</h1>
+        			</td>
+        		</tr>
+        		<tr>
+        			<td>
+        				<form action="/pass" method="get">
+        				<textarea name="code" cols="50" rows="10" type="text" id="code" oninput="Pass()"> {{.code}}</textarea>
+        			</td>
+        		</tr>
+        		<tr>
+        			<td> 
+        				<input type="submit" name="guess"> 
+        				</form>
+        			</td>
+        		</tr>
+        	</table>
+        	<p id = "answer" style="text-align: center;"> {{.answer}} </p>
+	<script>
+	function Pass() {
+		var x = document.getElementById("code").value;
+		document.getElementById("answer").innerHTML = "You wrote: " + Solve(x) + " code";
+	}
+
+	function Solve(url){
+                  var request = new XMLHttpRequest();
+                  request.open('GET', '/find?code=' + url, /* async = */ false);
+                  request.send(); 
+                  return request.responseText;
+            }
+	</script>
+</body>
+</html>

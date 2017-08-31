@@ -1,99 +1,52 @@
 package main
 
 import (
-	"html/template"
-	"io/ioutil"
+	"github.com/gin-gonic/gin"
 	"net/http"
-	"regexp"
-	"log"
 	"strings"
 )
 
-type Page struct {
-	Title string
-	Body  []byte
-	Ret string
-}
-
-func (p *Page) save() error {
-	filename := "in.txt"
-	return ioutil.WriteFile(filename, p.Body, 0600)
-}
-func solve(in string)(string){
-	var ret string 
-	if(strings.Count(in,"{") == 0){
-		ret = "Python"
-	}else if(strings.Count(in,"include") == 1){
-		ret = "C/C++"
-	}
-	return ret 
-}
-func loadPage(title string) (*Page, error) {
-	filename :=  "in.txt"
-	body, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	n := len(body)
-	s := string(body[:n])
-	ret := solve(s)
-	return &Page{Title: title, Body: body , Ret: ret}, nil
-}
-
-func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
-		return
-	}
-	renderTemplate(w, "view", p)
-}
-
-func editHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		p = &Page{Title: title}
-	}
-	renderTemplate(w, "edit", p)
-}
-
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
-	body := r.FormValue("body")
-	p := &Page{Title: title, Body: []byte(body)}
-	err := p.save()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/view/"+title, http.StatusFound)
-}
-
-var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
-
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
-
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-		fn(w, r, m[2])
-	}
-}
-
 func main() {
-	http.HandleFunc("/view/", makeHandler(viewHandler))
-	http.HandleFunc("/edit/", makeHandler(editHandler))
-	http.HandleFunc("/save/", makeHandler(saveHandler))
-	log.Println("Listening to 8080")
-	http.ListenAndServe(":8080", nil)
+	router := gin.Default()
+	router.GET("/", helloworld)
+	router.GET("/pass", pass)
+	router.GET("/find", find)
+
+	router.LoadHTMLGlob("html/*.html")
+	router.Run(":8080")
+}
+
+func helloworld(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
+}
+
+func pass(c *gin.Context) {
+	var buf struct {
+		Code string `form:"code"`
+	}
+	c.Bind(&buf)
+
+	c.HTML(http.StatusOK, "index.html", gin.H{
+		"code":   buf.Code,
+		"answer": solve(buf.Code),
+	})
+}
+
+func find(c *gin.Context) {
+	var buf struct {
+		Code string `form:"code"`
+	}
+	c.Bind(&buf)
+
+	c.String(200, solve(buf.Code))
+
+}
+func solve(code string) string {
+	var ret string
+	if strings.Count(code, "{") > 0 || strings.Count(code, "include") > 0 {
+		ret = "C/C++"
+	} else {
+		ret = "Not defined yet"
+	}
+	return ret
 }
